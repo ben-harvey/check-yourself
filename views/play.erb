@@ -1,0 +1,28 @@
+<audio  autoplay controls loop >
+  <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
+</audio>
+
+<% each_flow_section do |flow_section, instrument_array| %>
+
+  <h4> <%= flow_section %></h4>
+
+  <div class="wrapper">
+    <% each_instrument(instrument_array) do |instrument, pattern| %>
+
+      <form method="post" action="/pattern/<%= instrument %>">
+        <label><%= instrument %></label>
+        <div class="checkboxes">
+
+        <% pattern.chars.each_with_index do |note, index| %>
+          <input type="checkbox" name="pattern[]" value="<%= index %>" <%= checked_box(note) %> >
+        <% end %>
+        <input type="submit" value="Submit"/>
+        </div>
+      </form>
+    <% end %>
+  </div>
+<% end %>
+
+
+
+

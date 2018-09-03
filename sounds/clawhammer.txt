@@ -1,0 +1,3 @@
+Sounds extracted using Clawhammer.
+
+https://github.com/jstrait/clawhammer
