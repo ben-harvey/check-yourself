@@ -29,6 +29,7 @@ end
 before do
   @blank_yaml_path = "yaml/blank.yaml"
   @blank_pattern_path = "yaml/blank_pattern.yaml"
+
 end
 
 ## view helpers ##
@@ -75,8 +76,8 @@ def render_beats(yaml_file, wav_file)
   session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
 end
 
-def change_tempo(parsed_yaml, new_tempo)
-  parsed_yaml["Song"]["Tempo"] = new_tempo
+def get_tempo(parsed_yaml)
+  parsed_yaml["Song"]["Tempo"]
 end
 
 # returns a hash of {"$pattern"=> "x$repeats"}
@@ -127,6 +128,15 @@ def add_pattern(yaml_name)
   File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
 end
 
+def change_tempo(yaml_name)
+  parsed = YAML.load(File.open(yaml_name))
+  new_tempo = session.delete(:tempo).to_i 
+
+  parsed["Song"]["Tempo"] = new_tempo
+
+  File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
+end
+
 ## file helpers ##
 
 # consider refactoring
@@ -157,6 +167,7 @@ get '/' do
   @wav_name = replace_wav_file
   yaml_name = session[:yaml_name] || @blank_yaml_path
 
+  change_tempo(yaml_name) if session[:tempo]
   add_pattern(yaml_name) if session[:new_pattern]
   change_rhythm(yaml_name) if session[:rhythm]
   change_pattern(yaml_name) if session[:repeats]
@@ -164,6 +175,7 @@ get '/' do
 
   new_yaml_name = replace_yaml_file(yaml_name)
   @parsed_yaml = YAML.load(File.open(new_yaml_name))  # for helpers
+  @tempo = get_tempo(@parsed_yaml)
 
   erb :play
 end
@@ -172,6 +184,11 @@ get '/song/new_pattern' do
   erb :add
 end
 
+post '/song/update/tempo' do 
+  session[:tempo] = params[:tempo]
+
+  redirect '/'
+end
 
 post '/rhythm/:pattern/:instrument' do
   session[:instrument] = params[:instrument]

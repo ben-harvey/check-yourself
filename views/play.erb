@@ -3,10 +3,20 @@
     <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
   </audio>
 </div>
+
+<form method="post" action="/song/update/tempo"> 
+    <span>Current tempo (BPM)</span>
+    <input type="number" id="tempo" name="tempo" min="30" max="300" value="<%= @tempo %>" />
+    <br>
+    <input type="submit" value="Update tempo">
+</form>
+
+<br>
 <a href="/song/new_pattern">Add a pattern</a>
 <br>
 <% each_pattern do |pattern, instrument_array| %>
   <h4> <%= pattern %> <%= repeats(pattern) %> </h4>
+
   <form class="repeats" method="post" action="song/update/<%= pattern %>">
     <select name="repeats">
       <option value="none">Number of repeats</option>
@@ -16,6 +26,7 @@
     </select>
     <input type="submit" value="Update pattern">
   </form>
+
 <p></p>
 <% each_instrument(instrument_array) do |instrument, rhythm| %>
   <form method="post" action="/rhythm/<%= pattern %>/<%= instrument %>">

@@ -10,11 +10,17 @@ h4 {
 label {
   display: block;
 }
+
 .repeats {
   display: inline ;
 }
+
 input[type="checkbox"] {
   transform:scale(2, 2);
   margin: 8px;
 }
 
+input[type="number"] {
+  transform:scale(1.2, 1.2);
+  margin: 8px;
+}
