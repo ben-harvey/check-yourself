@@ -4,7 +4,7 @@ Features
   have preset kits
     later, have build kit feature
 
-  set number of repeats
+
 
   add new flow section
 
@@ -14,8 +14,6 @@ To do
 
 
 =end
-
-
 require 'yaml'
 require 'psych'
 require 'sinatra'
@@ -36,10 +34,11 @@ before do
   @blank_yaml_path = "yaml/blank.yaml"
 end
 
+## view helpers ##
 
 helpers do
   def each_flow_section
-    flow_sections = @yaml_file.reject { |k, v| k == "Song"}
+    flow_sections = @parsed_yaml.reject { |k, v| k == "Song"}
     flow_sections.each do |flow_section, instrument_array|
       yield(flow_section, instrument_array)
     end
@@ -51,7 +50,7 @@ helpers do
   end
 
   def repeats(flow_section)
-    find_section(flow_section).chars.join(' ')
+    find_section(flow_section, @parsed_yaml)[flow_section].chars.join(' ')
   end
 
   def each_instrument(instrument_array)
@@ -73,10 +72,10 @@ def change_tempo(parsed_yaml, new_tempo)
   parsed_yaml["Song"]["Tempo"] = new_tempo
 end
 
- def find_section(flow_section)
-    section = @yaml_file["Song"]["Flow"].find {|sections| sections.has_key?(flow_section)}
-    section[flow_section]
-  end
+# returns a hash of {"$section"=> "x$repeats"}
+def find_section(flow_section, parsed_yaml)
+    parsed_yaml["Song"]["Flow"].find {|sections| sections.has_key?(flow_section)}
+end
 
 def new_instrument_pattern(instrument, flow_section, parsed_yaml, new_pattern)
   section = parsed_yaml[flow_section]
@@ -88,11 +87,22 @@ def new_instrument_pattern(instrument, flow_section, parsed_yaml, new_pattern)
   end
 end
 
-def change_pattern(yaml_name, instrument)
+def change_pattern(yaml_name)
   parsed = YAML.load(File.open(yaml_name))
+  instrument = session[:instrument]
 
   new_pattern = session[:pattern]
   new_instrument_pattern(instrument, "Verse", parsed, new_pattern)
+
+  File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
+end
+
+def change_section(yaml_name)
+  parsed = YAML.load(File.open(yaml_name))
+  section = session[:flow_section]
+  repeats = session[:repeats]
+
+  find_section(section, parsed)[section] = "x#{repeats}"
 
   File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
 end
@@ -126,11 +136,12 @@ get '/' do
   @wav_name = replace_wav_file
   yaml_name = session[:yaml_name] || @blank_yaml_path
 
-  change_pattern(yaml_name, session[:instrument]) if session[:pattern]
+  change_pattern(yaml_name) if session[:pattern]
+  change_section(yaml_name) if session[:repeats]
   render_beats(yaml_name, @wav_name)
 
   new_yaml_name = replace_yaml_file(yaml_name)
-  @yaml_file = YAML.load(File.open(new_yaml_name))  # for helpers
+  @parsed_yaml = YAML.load(File.open(new_yaml_name))  # for helpers
 
   erb :play
 end
@@ -150,11 +161,10 @@ post '/pattern/:instrument' do
 end
 
 post "/section/:flow_section" do
-  flow_section = params[:flow_section]
-  def find_section(flow_section)
-    section = @yaml_file["Song"]["Flow"].find {|sections| sections.has_key?(flow_section)}
-    section[flow_section]
-  end
+  session[:flow_section] = params[:flow_section]
+  session[:repeats] = params[:repeats]
+
+  redirect "/"
 end
 #
 #   {
