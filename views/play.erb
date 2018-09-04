@@ -1,38 +1,32 @@
-<audio  autoplay controls loop >
-  <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
-</audio>
-
-<% each_flow_section do |flow_section, instrument_array| %>
-
-  <h4> <%= flow_section %> <%= repeats(flow_section) %> </h4>
-
-  <form method="post" action="/section/<%= flow_section %>">
+<div class='header'>
+  <audio  autoplay controls loop >
+    <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
+  </audio>
+</div>
+<a href="/song/new_pattern">Add a pattern</a>
+<br>
+<% each_pattern do |pattern, instrument_array| %>
+  <h4> <%= pattern %> <%= repeats(pattern) %> </h4>
+  <form class="repeats" method="post" action="song/new/<%= pattern %>">
     <select name="repeats">
       <option value="none">Number of repeats</option>
       <% (1..8).each do |number| %>
         <option value="<%= number %>"><%= number %></option>
       <% end %>
-      <input type="submit" value="Update section">
     </select>
+    <input type="submit" value="Update pattern">
   </form>
+<p></p>
+<% each_instrument(instrument_array) do |instrument, rhythm| %>
+  <form method="post" action="/<%= pattern %>/<%= instrument %>">
+    <label><%= instrument %></label>
 
-  <div class="wrapper">
-    <% each_instrument(instrument_array) do |instrument, pattern| %>
-
-      <form method="post" action="/pattern/<%= instrument %>">
-        <label><%= instrument %></label>
-        <div class="checkboxes">
-
-        <% pattern.chars.each_with_index do |note, index| %>
-          <input type="checkbox" name="pattern[]" value="<%= index %>" <%= checked_box(note) %> >
-        <% end %>
-        <input type="submit" value="Update pattern"/>
-        </div>
-      </form>
+    <% rhythm.chars.each_with_index do |note, index| %>
+      <input type="checkbox" name="rhythm[]" value="<%= index %>" <%= checked_box(note) %> >
     <% end %>
-  </div>
+    <input type="submit" value="Update rhythm"/>
+</form>
 <% end %>
-
-
-
+<br>
+<% end %>
 

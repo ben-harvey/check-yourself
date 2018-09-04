@@ -1,5 +1,18 @@
+a {
+  display: block;
+}
 
+h4 {
+  display: inline;
 
+}
+
+label {
+  display: block;
+}
+.repeats {
+  display: inline ;
+}
 input[type="checkbox"] {
   transform:scale(2, 2);
   margin: 8px;

@@ -1,17 +1,15 @@
 =begin
 
 Features
-  have preset kits
-    later, have build kit feature
+  -have preset kits
 
+  -build custom kit
 
-
-  add new flow section
-
+  -add new flow pattern
+    text box- pattern name
+    create pattern button
 
 To do
-
-
 
 =end
 require 'yaml'
@@ -37,10 +35,10 @@ end
 ## view helpers ##
 
 helpers do
-  def each_flow_section
-    flow_sections = @parsed_yaml.reject { |k, v| k == "Song"}
-    flow_sections.each do |flow_section, instrument_array|
-      yield(flow_section, instrument_array)
+  def each_pattern
+    patterns = @parsed_yaml.reject { |k, v| k == "Song"}
+    patterns.each do |pattern, instrument_array|
+      yield(pattern, instrument_array)
     end
   end
 
@@ -49,20 +47,28 @@ helpers do
     "checked" if note == "X"
   end
 
-  def repeats(flow_section)
-    find_section(flow_section, @parsed_yaml)[flow_section].chars.join(' ')
+  def repeats(pattern)
+    find_pattern(pattern, @parsed_yaml)[pattern].chars.join(' ')
   end
 
   def each_instrument(instrument_array)
     instrument_array.each do |instrument_hash|
-      instrument_hash.each do |instrument, pattern|
-        yield(instrument, pattern)
+      instrument_hash.each do |instrument, rhythm|
+        yield(instrument, rhythm)
       end
     end
   end
 end
 
-## beat helpers ##
+## validation helpers ##
+
+def empty_input?(input)
+  input.strip.empty?
+end
+
+def validate_name(name)
+  'A name is required' if empty_input?(name)
+end
 
 def render_beats(yaml_file, wav_file)
   session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
@@ -72,37 +78,38 @@ def change_tempo(parsed_yaml, new_tempo)
   parsed_yaml["Song"]["Tempo"] = new_tempo
 end
 
-# returns a hash of {"$section"=> "x$repeats"}
-def find_section(flow_section, parsed_yaml)
-    parsed_yaml["Song"]["Flow"].find {|sections| sections.has_key?(flow_section)}
+# returns a hash of {"$pattern"=> "x$repeats"}
+def find_pattern(pattern, parsed_yaml)
+    parsed_yaml["Song"]["Flow"].find {|patterns| patterns.has_key?(pattern)}
 end
 
-def new_instrument_pattern(instrument, flow_section, parsed_yaml, new_pattern)
-  section = parsed_yaml[flow_section]
-  pattern = section.find { |patterns|  patterns.has_key?(instrument) }
-  if pattern
-    pattern[instrument] = new_pattern
+def new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
+  pattern = parsed_yaml[pattern]
+  rhythm = pattern.find { |rhythms|  rhythms.has_key?(instrument) }
+  if rhythm
+    rhythm[instrument] = new_rhythm
   else
-    section << {instrument => new_pattern}
+    pattern << {instrument => new_rhythm}
   end
 end
 
-def change_pattern(yaml_name)
+def change_rhythm(yaml_name)
   parsed = YAML.load(File.open(yaml_name))
   instrument = session[:instrument]
+  new_rhythm = session[:rhythm]
+  pattern = session[:pattern]
 
-  new_pattern = session[:pattern]
-  new_instrument_pattern(instrument, "Verse", parsed, new_pattern)
+  new_instrument_rhythm(instrument, pattern, parsed, new_rhythm)
 
   File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
 end
 
-def change_section(yaml_name)
+def change_pattern(yaml_name)
   parsed = YAML.load(File.open(yaml_name))
-  section = session[:flow_section]
+  pattern = session[:pattern]
   repeats = session[:repeats]
 
-  find_section(section, parsed)[section] = "x#{repeats}"
+  find_pattern(pattern, parsed)[pattern] = "x#{repeats}"
 
   File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
 end
@@ -136,8 +143,8 @@ get '/' do
   @wav_name = replace_wav_file
   yaml_name = session[:yaml_name] || @blank_yaml_path
 
-  change_pattern(yaml_name) if session[:pattern]
-  change_section(yaml_name) if session[:repeats]
+  change_rhythm(yaml_name) if session[:rhythm]
+  change_pattern(yaml_name) if session[:repeats]
   render_beats(yaml_name, @wav_name)
 
   new_yaml_name = replace_yaml_file(yaml_name)
@@ -146,25 +153,44 @@ get '/' do
   erb :play
 end
 
+get '/song/new_pattern' do
+  erb :add
+end
 
-post '/pattern/:instrument' do
+
+post '/:pattern/:instrument' do
   session[:instrument] = params[:instrument]
+  session[:pattern] = params[:pattern]
 
-  pattern = ['.'] * 16
-  params[:pattern] ||= []
-  notes = params[:pattern].map(&:to_i)
-  notes.each { |note| pattern[note] = 'X' }
-  session[:pattern] = pattern.join
+  rhythm = ['.'] * 16
+  params[:rhythm] ||= []
+  notes = params[:rhythm].map(&:to_i)
+  notes.each { |note| rhythm[note] = 'X' }
+  session[:rhythm] = rhythm.join
 
 
   redirect "/"
 end
 
-post "/section/:flow_section" do
-  session[:flow_section] = params[:flow_section]
+post "/song/new/:pattern" do
+  session[:pattern] = params[:pattern]
   session[:repeats] = params[:repeats]
 
   redirect "/"
+end
+
+post '/song/new_pattern' do
+  title = params[:title]
+
+
+  if validate_name(title)
+    session[:message] = validate_name(title)
+    status 422
+
+   erb :add
+  else
+    redirect '/'
+  end
 end
 #
 #   {
