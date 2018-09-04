@@ -21,6 +21,8 @@ require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'pry'
 require 'fileutils'
+require 'tempfile'
+require 'securerandom'
 
 configure do
   enable :sessions
@@ -61,7 +63,7 @@ def change_tempo(parsed_yaml, new_tempo)
 end
 
 def random_filename
-  (rand(1..1000)).to_s
+  SecureRandom.uuid
 end
 
 def new_instrument_pattern(instrument, flow_section, parsed_yaml, new_pattern)
@@ -86,19 +88,33 @@ end
 ## routes ##
 
 get '/' do
-  yaml_name = session[:yaml_name] || "blank.yaml"
+  last_wav_name = session[:last_wav_name]
+  FileUtils.rm("public/" + last_wav_name) if last_wav_name
   @wav_name = "#{random_filename}.wav"
+  session[:last_wav_name] = @wav_name
 
+  yaml_name = session[:yaml_name] || "yaml/blank.yaml"
   change_pattern(yaml_name, session[:instrument]) if session[:pattern]
   render_beats(yaml_name, @wav_name)
 
-  new_yaml_name = "#{random_filename}.yaml"
+  new_yaml_name = "yaml/#{random_filename}.yaml"
   FileUtils.cp(yaml_name, new_yaml_name)
+  # binding.pry
+  FileUtils.rm(yaml_name) unless yaml_name == "yaml/blank.yaml"
+
   session[:yaml_name] = new_yaml_name
   @yaml_file = YAML.load(File.open(new_yaml_name))  # for helpers
 
+
   erb :play
 end
+
+=begin
+if there is no session[:yaml_name], then use blank.yaml
+else, use path stored in session[:name]
+  generate a random filename for
+
+=end
 
 post '/pattern/:instrument' do
   session[:instrument] = params[:instrument]
