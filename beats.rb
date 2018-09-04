@@ -4,13 +4,15 @@ Features
   have preset kits
     later, have build kit feature
 
+  set number of repeats
 
+  add new flow section
 
 
 To do
-    clean up after wav and yaml file creation
 
-    capture beats errors and render error message to index
+
+
 =end
 
 
@@ -30,6 +32,11 @@ configure do
   set :erb, :escape_html => true
 end
 
+before do
+  @blank_yaml_path = "yaml/blank.yaml"
+end
+
+
 helpers do
   def each_flow_section
     flow_sections = @yaml_file.reject { |k, v| k == "Song"}
@@ -41,6 +48,10 @@ helpers do
   # returns a string or nil
   def checked_box(note)
     "checked" if note == "X"
+  end
+
+  def repeats(flow_section)
+    find_section(flow_section).chars.join(' ')
   end
 
   def each_instrument(instrument_array)
@@ -55,16 +66,17 @@ end
 ## beat helpers ##
 
 def render_beats(yaml_file, wav_file)
-  `beats --path sounds #{yaml_file} public/#{wav_file}`
+  session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
 end
 
 def change_tempo(parsed_yaml, new_tempo)
   parsed_yaml["Song"]["Tempo"] = new_tempo
 end
 
-def random_filename
-  SecureRandom.uuid
-end
+ def find_section(flow_section)
+    section = @yaml_file["Song"]["Flow"].find {|sections| sections.has_key?(flow_section)}
+    section[flow_section]
+  end
 
 def new_instrument_pattern(instrument, flow_section, parsed_yaml, new_pattern)
   section = parsed_yaml[flow_section]
@@ -85,36 +97,44 @@ def change_pattern(yaml_name, instrument)
   File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
 end
 
+## file helpers ##
+
+# consider refactoring
+def replace_wav_file
+  if session[:last_wav_name]
+    path = File.join("public", session[:last_wav_name])
+    FileUtils.rm(path)
+  end
+  session[:last_wav_name] = "#{random_filename}.wav"
+end
+
+# consider refactoring
+def replace_yaml_file(old_yaml_name)
+  new_yaml_name = "yaml/#{random_filename}.yaml"
+  FileUtils.cp(old_yaml_name, new_yaml_name)
+  FileUtils.rm(old_yaml_name) unless old_yaml_name == @blank_yaml_path
+
+  session[:yaml_name] = new_yaml_name
+end
+
+def random_filename
+  SecureRandom.uuid
+end
 ## routes ##
 
 get '/' do
-  last_wav_name = session[:last_wav_name]
-  FileUtils.rm("public/" + last_wav_name) if last_wav_name
-  @wav_name = "#{random_filename}.wav"
-  session[:last_wav_name] = @wav_name
+  @wav_name = replace_wav_file
+  yaml_name = session[:yaml_name] || @blank_yaml_path
 
-  yaml_name = session[:yaml_name] || "yaml/blank.yaml"
   change_pattern(yaml_name, session[:instrument]) if session[:pattern]
   render_beats(yaml_name, @wav_name)
 
-  new_yaml_name = "yaml/#{random_filename}.yaml"
-  FileUtils.cp(yaml_name, new_yaml_name)
-  # binding.pry
-  FileUtils.rm(yaml_name) unless yaml_name == "yaml/blank.yaml"
-
-  session[:yaml_name] = new_yaml_name
+  new_yaml_name = replace_yaml_file(yaml_name)
   @yaml_file = YAML.load(File.open(new_yaml_name))  # for helpers
-
 
   erb :play
 end
 
-=begin
-if there is no session[:yaml_name], then use blank.yaml
-else, use path stored in session[:name]
-  generate a random filename for
-
-=end
 
 post '/pattern/:instrument' do
   session[:instrument] = params[:instrument]
@@ -127,6 +147,14 @@ post '/pattern/:instrument' do
 
 
   redirect "/"
+end
+
+post "/section/:flow_section" do
+  flow_section = params[:flow_section]
+  def find_section(flow_section)
+    section = @yaml_file["Song"]["Flow"].find {|sections| sections.has_key?(flow_section)}
+    section[flow_section]
+  end
 end
 #
 #   {

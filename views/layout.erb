@@ -7,15 +7,11 @@
   </head>
 
   <body>
-   <!--  <% if session[:failure] %>
-      <div class="flash failure">
-        <p><%= session.delete(:failure) %></p>
+    <% if session[:message] %>
+      <div class="flash">
+        <p><%= session.delete(:message) %></p>
       </div>
-    <% elsif session[:success] %>
-      <div class="flash success">
-        <p><%= session.delete(:success) %></p>
-      </div>
-    <% end %> -->
+    <% end %>
 
     <%== yield %>
   </body>

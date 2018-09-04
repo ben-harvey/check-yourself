@@ -7,7 +7,7 @@ gem "minitest"
 gem "bcrypt"
 gem "pry"
 gem "beats"
-gem "rerun"
+gem "rake"
 
 
 ruby "2.4.2"
@@ -16,7 +16,5 @@ group :production do
   gem "puma"
 end
 
-# group :development do
-#   gem "rerun"
-# end
+
 

@@ -4,7 +4,17 @@
 
 <% each_flow_section do |flow_section, instrument_array| %>
 
-  <h4> <%= flow_section %></h4>
+  <h4> <%= flow_section %> <%= repeats(flow_section) %> </h4>
+
+  <form method="post" action="/section/<%= flow_section %>">
+    <select name="repeats">
+      <option value="none">Number of repeats</option>
+      <% (1..8).each do |number| %>
+        <option value="<%= number %>"><%= number %></option>
+      <% end %>
+      <input type="submit" value="Update section">
+    </select>
+  </form>
 
   <div class="wrapper">
     <% each_instrument(instrument_array) do |instrument, pattern| %>
@@ -16,7 +26,7 @@
         <% pattern.chars.each_with_index do |note, index| %>
           <input type="checkbox" name="pattern[]" value="<%= index %>" <%= checked_box(note) %> >
         <% end %>
-        <input type="submit" value="Submit"/>
+        <input type="submit" value="Update pattern"/>
         </div>
       </form>
     <% end %>

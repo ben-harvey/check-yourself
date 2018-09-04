@@ -32,34 +32,7 @@ parsed = {
   }
 
 
-# def change_instrument_pattern(instrument, flow_section, parsed_yaml, new_pattern)
-# pattern = parsed_yaml[flow_section].find {|patterns|  patterns.has_key?(instrument)}
-# pattern[instrument] = new_pattern
-# end
+p parsed["Song"]["Flow"].find
 
 =begin
- Verse:
-    bass
-      checkboxes
-    snare
-      checkboxes
-    hihat
-      checkboxes
 =end
-
-
-def render_checkboxes(parsed)
-  # parsed = YAML.load(File.open(yaml_file))
-  flow_sections = parsed.reject { |k, v| k == "Song"}
-  flow_sections.each do |flow_section, instrument_array|
-    p flow_section
-    p instrument_array
-  #   instrument_array.each do |instrument_hash|
-  #     instrument_hash.each do |instrument, pattern|
-  #       yield({flow_section => [instrument, pattern]})
-  #     end
-  #   end
-  end
-end
-
-render_checkboxes(parsed)
