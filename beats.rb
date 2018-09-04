@@ -5,12 +5,8 @@ Features
 
   -build custom kit
 
-  -add new flow pattern
-    text box- pattern name
-    create pattern button
+  - clear rhythm 
 
-    add pattern
-      add
 To do
   refactor change methods to delete session values after lookup
 =end
@@ -73,6 +69,8 @@ def validate_name(name)
   'A name is required' if empty_input?(name)
 end
 
+## beat helpers ##
+
 def render_beats(yaml_file, wav_file)
   session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
 end
@@ -98,9 +96,9 @@ end
 
 def change_rhythm(yaml_name)
   parsed = YAML.load(File.open(yaml_name))
-  instrument = session[:instrument]
-  new_rhythm = session[:rhythm]
-  pattern = session[:pattern]
+  instrument = session.delete(:instrument)
+  new_rhythm = session.delete(:rhythm)
+  pattern = session.delete(:pattern)
 
   new_instrument_rhythm(instrument, pattern, parsed, new_rhythm)
 
@@ -109,8 +107,8 @@ end
 
 def change_pattern(yaml_name)
   parsed = YAML.load(File.open(yaml_name))
-  pattern = session[:pattern]
-  repeats = session[:repeats]
+  pattern = session.delete(:pattern)
+  repeats = session.delete(:repeats)
 
   find_pattern(pattern, parsed)[pattern] = "x#{repeats}"
 
@@ -119,7 +117,7 @@ end
 
 def add_pattern(yaml_name)
   parsed = YAML.load(File.open(yaml_name))
-  pattern_title = session[:pattern_title]
+  pattern_title = session.delete(:pattern_title)
   new_pattern = session.delete(:new_pattern)
 
   parsed[pattern_title] = new_pattern
@@ -152,6 +150,7 @@ end
 def random_filename
   SecureRandom.uuid
 end
+
 ## routes ##
 
 get '/' do
