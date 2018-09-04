@@ -9,8 +9,10 @@ Features
     text box- pattern name
     create pattern button
 
+    add pattern
+      add
 To do
-
+  refactor change methods to delete session values after lookup
 =end
 require 'yaml'
 require 'psych'
@@ -30,6 +32,7 @@ end
 
 before do
   @blank_yaml_path = "yaml/blank.yaml"
+  @blank_pattern_path = "yaml/blank_pattern.yaml"
 end
 
 ## view helpers ##
@@ -114,6 +117,18 @@ def change_pattern(yaml_name)
   File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
 end
 
+def add_pattern(yaml_name)
+  parsed = YAML.load(File.open(yaml_name))
+  pattern_title = session[:pattern_title]
+  new_pattern = session.delete(:new_pattern)
+
+  parsed[pattern_title] = new_pattern
+  parsed["Song"]["Flow"] << {pattern_title => "x2"}
+
+
+  File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
+end
+
 ## file helpers ##
 
 # consider refactoring
@@ -143,6 +158,7 @@ get '/' do
   @wav_name = replace_wav_file
   yaml_name = session[:yaml_name] || @blank_yaml_path
 
+  add_pattern(yaml_name) if session[:new_pattern]
   change_rhythm(yaml_name) if session[:rhythm]
   change_pattern(yaml_name) if session[:repeats]
   render_beats(yaml_name, @wav_name)
@@ -158,7 +174,7 @@ get '/song/new_pattern' do
 end
 
 
-post '/:pattern/:instrument' do
+post '/rhythm/:pattern/:instrument' do
   session[:instrument] = params[:instrument]
   session[:pattern] = params[:pattern]
 
@@ -172,26 +188,28 @@ post '/:pattern/:instrument' do
   redirect "/"
 end
 
-post "/song/new/:pattern" do
+post '/song/new_pattern' do
+  @pattern_title = params[:title]
+
+  if validate_name(@pattern_title)
+    session[:message] = validate_name(@pattern_title)
+    status 422
+
+   erb :add
+  else
+    session[:new_pattern] = YAML.load(File.open(@blank_pattern_path))
+    session[:pattern_title] = @pattern_title
+    redirect '/'
+  end
+end
+
+post "/song/update/:pattern" do
   session[:pattern] = params[:pattern]
   session[:repeats] = params[:repeats]
 
   redirect "/"
 end
 
-post '/song/new_pattern' do
-  title = params[:title]
-
-
-  if validate_name(title)
-    session[:message] = validate_name(title)
-    status 422
-
-   erb :add
-  else
-    redirect '/'
-  end
-end
 #
 #   {
 #     "Song"=>

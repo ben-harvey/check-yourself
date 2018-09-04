@@ -7,7 +7,7 @@
 <br>
 <% each_pattern do |pattern, instrument_array| %>
   <h4> <%= pattern %> <%= repeats(pattern) %> </h4>
-  <form class="repeats" method="post" action="song/new/<%= pattern %>">
+  <form class="repeats" method="post" action="song/update/<%= pattern %>">
     <select name="repeats">
       <option value="none">Number of repeats</option>
       <% (1..8).each do |number| %>
@@ -18,7 +18,7 @@
   </form>
 <p></p>
 <% each_instrument(instrument_array) do |instrument, rhythm| %>
-  <form method="post" action="/<%= pattern %>/<%= instrument %>">
+  <form method="post" action="/rhythm/<%= pattern %>/<%= instrument %>">
     <label><%= instrument %></label>
 
     <% rhythm.chars.each_with_index do |note, index| %>

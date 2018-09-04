@@ -4,7 +4,7 @@ parsed = {
             "Tempo"=>105,
              "Flow"=>
                   [
-                  {"Verse"=>"x4"}, {"Chorus"=>"x4"}
+                  {"Verse"=>"x4"}
                   ],
              "Kit"=>
              [
@@ -21,7 +21,11 @@ parsed = {
             {"snare"=>"....X.......X..."},
             {"hihat"=>"..X...X...X...X."}
           ],
-    "Chorus"=>
+  }
+
+# Song::Flow::Pattern::Track::Rhythm
+
+new_pattern =
           [
             {"bass"=>"X..X...X..X....."},
             {"snare"=>"....X.......X..."},
@@ -29,11 +33,15 @@ parsed = {
             {"cowbell"=>"....XX.X..X.X..."},
             {"deep"=>".............XX."}
           ]
-  }
 
-Song::Flow::Pattern::Track::Rhythm
+name = "Chorus"
+p parsed
+p "------------"
+def add_pattern(name, parsed_yaml)
+  parsed_yaml[name] = new_pattern
+  parsed_yaml["Song"]["Flow"] << {name => "x2"}
 
-p parsed["Song"]["Flow"].find
 
+p parsed
 =begin
 =end

@@ -3,13 +3,20 @@ Song:
   Tempo: 105
   Flow:
   - Verse: x2
+  - Chorus: x2
+  - Chorus: x2
   Kit:
   - bass: house_2_1.wav
   - snare: roland_tr_909_2.wav
   - hihat: house_2_5.wav
   - cowbell: big_beat_5.wav
 Verse:
-- bass: "................"
+- bass: X...X...........
 - cowbell: "................"
+- snare: "................"
+- hihat: "................"
+Chorus:
+- bass: "................"
+- cowbell: X...X...........
 - snare: "................"
 - hihat: "................"
