@@ -23,25 +23,14 @@ parsed = {
           ],
   }
 
-# Song::Flow::Pattern::Track::Rhythm
 
-new_pattern =
-          [
-            {"bass"=>"X..X...X..X....."},
-            {"snare"=>"....X.......X..."},
-            {"hihat"=>"XXXXXXXXXXXXX..."},
-            {"cowbell"=>"....XX.X..X.X..."},
-            {"deep"=>".............XX."}
-          ]
+new_kit =
+             [
+              {"xylophone" =>  "xylo.wav"}
+              ]
 
-name = "Chorus"
-p parsed
-p "------------"
-def add_pattern(name, parsed_yaml)
-  parsed_yaml[name] = new_pattern
-  parsed_yaml["Song"]["Flow"] << {name => "x2"}
-
-
-p parsed
+p parsed["Song"]
+parsed["Song"]["Kit"] = new_kit
+p parsed["Song"]
 =begin
 =end

@@ -5,10 +5,8 @@ Features
 
   -build custom kit
 
-  - clear rhythm 
+  - clear rhythm
 
-To do
-  refactor change methods to delete session values after lookup
 =end
 require 'yaml'
 require 'psych'
@@ -29,10 +27,9 @@ end
 before do
   @blank_yaml_path = "yaml/blank.yaml"
   @blank_pattern_path = "yaml/blank_pattern.yaml"
-
 end
 
-## view helpers ##
+##### view helpers #####
 
 helpers do
   def each_pattern
@@ -60,7 +57,7 @@ helpers do
   end
 end
 
-## validation helpers ##
+##### validation helpers #####
 
 def empty_input?(input)
   input.strip.empty?
@@ -70,7 +67,7 @@ def validate_name(name)
   'A name is required' if empty_input?(name)
 end
 
-## beat helpers ##
+##### beat helpers #####
 
 def render_beats(yaml_file, wav_file)
   session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
@@ -95,49 +92,50 @@ def new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
   end
 end
 
-def change_rhythm(yaml_name)
-  parsed = YAML.load(File.open(yaml_name))
+##### beat changers #####
+
+# consider adding return value directly to parsed_yaml in route to avoid
+# opening and writing to file in each method
+
+def change_rhythm(parsed_yaml, yaml_name)
   instrument = session.delete(:instrument)
   new_rhythm = session.delete(:rhythm)
   pattern = session.delete(:pattern)
 
-  new_instrument_rhythm(instrument, pattern, parsed, new_rhythm)
+  new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
 
-  File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
+  write_to_yaml(parsed_yaml, yaml_name)
 end
 
-def change_pattern(yaml_name)
-  parsed = YAML.load(File.open(yaml_name))
+def change_pattern(parsed_yaml, yaml_name)
   pattern = session.delete(:pattern)
   repeats = session.delete(:repeats)
 
-  find_pattern(pattern, parsed)[pattern] = "x#{repeats}"
+  find_pattern(pattern, parsed_yaml)[pattern] = "x#{repeats}"
 
-  File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
+  write_to_yaml(parsed_yaml, yaml_name)
 end
 
-def add_pattern(yaml_name)
-  parsed = YAML.load(File.open(yaml_name))
+def add_pattern(parsed_yaml, yaml_name)
   pattern_title = session.delete(:pattern_title)
   new_pattern = session.delete(:new_pattern)
 
-  parsed[pattern_title] = new_pattern
-  parsed["Song"]["Flow"] << {pattern_title => "x2"}
+  parsed_yaml[pattern_title] = new_pattern
+  parsed_yaml["Song"]["Flow"] << {pattern_title => "x2"}
 
 
-  File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
+  write_to_yaml(parsed_yaml, yaml_name)
 end
 
-def change_tempo(yaml_name)
-  parsed = YAML.load(File.open(yaml_name))
-  new_tempo = session.delete(:tempo).to_i 
+def change_tempo(parsed_yaml, yaml_name)
+  new_tempo = session.delete(:tempo).to_i
 
-  parsed["Song"]["Tempo"] = new_tempo
+  parsed_yaml["Song"]["Tempo"] = new_tempo
 
-  File.open(yaml_name, 'w') { |f| f.write(parsed.to_yaml) }
+  write_to_yaml(parsed_yaml, yaml_name)
 end
 
-## file helpers ##
+##### file helpers #####
 
 # consider refactoring
 def replace_wav_file
@@ -161,16 +159,22 @@ def random_filename
   SecureRandom.uuid
 end
 
-## routes ##
+def write_to_yaml(parsed_yaml, yaml_name)
+  File.open(yaml_name, 'w') { |f| f.write(parsed_yaml.to_yaml) }
+end
+
+##### routes #####
 
 get '/' do
   @wav_name = replace_wav_file
   yaml_name = session[:yaml_name] || @blank_yaml_path
+  parsed_yaml = YAML.load(File.open(yaml_name))
 
-  change_tempo(yaml_name) if session[:tempo]
-  add_pattern(yaml_name) if session[:new_pattern]
-  change_rhythm(yaml_name) if session[:rhythm]
-  change_pattern(yaml_name) if session[:repeats]
+  change_tempo(parsed_yaml, yaml_name) if session[:tempo]
+  add_pattern(parsed_yaml, yaml_name) if session[:new_pattern]
+  change_rhythm(parsed_yaml, yaml_name) if session[:rhythm]
+  change_pattern(parsed_yaml, yaml_name) if session[:repeats]
+
   render_beats(yaml_name, @wav_name)
 
   new_yaml_name = replace_yaml_file(yaml_name)
@@ -184,7 +188,7 @@ get '/song/new_pattern' do
   erb :add
 end
 
-post '/song/update/tempo' do 
+post '/song/update/tempo' do
   session[:tempo] = params[:tempo]
 
   redirect '/'
@@ -225,38 +229,3 @@ post "/song/update/:pattern" do
 
   redirect "/"
 end
-
-#
-#   {
-#     "Song"=>
-#           {
-#             "Tempo"=>105,
-#              "Flow"=>
-#                   [
-#                   {"Verse"=>"x4"}, {"Chorus"=>"x4"}
-#                   ],
-#              "Kit"=>
-#              [
-#               {"bass"=>"sounds/house_2_1.wav"},
-#               {"snare"=>"sounds/roland_tr_909_2.wav"},
-#               {"hihat"=>"sounds/house_2_5.wav"},
-#               {"cowbell"=>"sounds/big_beat_5.wav"},
-#                {"deep"=>"sounds/house_2_2.wav"}
-#               ]
-#           },
-#     "Verse"=>
-#           [
-#             {"bass"=>"X..X...X..X..XX"},
-#             {"snare"=>"....X.......X..."},
-#             {"hihat"=>"..X...X...X...X."}
-#           ],
-#     "Chorus"=>
-#           [
-#             {"bass"=>"X..X...X..X....."},
-#             {"snare"=>"....X.......X..."},
-#             {"hihat"=>"XXXXXXXXXXXXX..."},
-#             {"cowbell"=>"....XX.X..X.X..."},
-#             {"deep"=>".............XX."}
-#           ]
-#   }
-#
