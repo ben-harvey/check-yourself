@@ -1,14 +1,13 @@
 =begin
 
 Features
-  -have preset kits
-    on first load, current kit is default.  store current kit in variable.
-    kits list shouldn't include current kit
+  generate blank patterns with current kit
 
   - clear rhythm
 
 To do
   rename var parsed_yaml to parsed_song
+
 =end
 require 'yaml'
 require 'psych'
@@ -164,6 +163,18 @@ def swap_instruments(old_kit_instruments, new_kit_instruments, patterns)
   end
 end
 
+def generate_new_pattern
+  current_kit_name = session[:kit]
+  current_kit_path = File.join(@kits_path, (current_kit_name + ".yaml"))
+
+  parsed_current_kit = YAML.load(File.open(current_kit_path))
+  current_kit_names = get_kit_instruments(parsed_current_kit)
+
+  current_kit_names.map do |name|
+    {name => "................"}
+  end
+end
+
 ##### beat changers #####
 
 # consider adding return value directly to parsed_yaml in route to avoid
@@ -210,7 +221,7 @@ end
 
 def add_pattern(parsed_yaml, yaml_name)
   pattern_title = session.delete(:pattern_title)
-  new_pattern = session.delete(:new_pattern)
+  new_pattern = generate_new_pattern
 
   parsed_yaml[pattern_title] = new_pattern
   parsed_yaml["Song"]["Flow"] << {pattern_title => "x2"}
@@ -235,7 +246,7 @@ get '/' do
   parsed_yaml = YAML.load(File.open(yaml_name))
 
   change_tempo(parsed_yaml, yaml_name) if session[:tempo]
-  add_pattern(parsed_yaml, yaml_name) if session[:new_pattern]
+  add_pattern(parsed_yaml, yaml_name) if session[:pattern_title]
   change_rhythm(parsed_yaml, yaml_name) if session[:rhythm]
   change_pattern(parsed_yaml, yaml_name) if session[:repeats]
   change_kit(parsed_yaml, yaml_name) if session[:old_kit]
@@ -283,7 +294,6 @@ post '/song/new_pattern' do
 
    erb :add
   else
-    session[:new_pattern] = YAML.load(File.open(@blank_pattern_path)) # should point to current kit and blank patterns
     session[:pattern_title] = @pattern_title
     redirect '/'
   end

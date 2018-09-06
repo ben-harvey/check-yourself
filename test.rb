@@ -66,18 +66,10 @@ end
 old_kit_names = get_kit_names(parsed_old_kit) # ["bass", "snare", "hihat", "cowbell", "deep"]
 new_kit_names = get_kit_names(parsed_new_kit)
 
-patterns = parsed.reject { |k, v| k == "Song"}
 
-
-patterns.each do |pattern|
-  # cloned_kit = kit_names.clone
-  pattern[1].each_with_index do |instrument, index|
-    old_name = old_kit_names[index]
-    new_name = new_kit_names[index]
-    instrument[new_name] = instrument.delete(old_name)
-  end
+new_pattern = new_kit_names.map do |name|
+  {name => "................"}
 end
-p patterns
-=begin
-=end
+p new_pattern
+
 
