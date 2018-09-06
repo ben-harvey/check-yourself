@@ -7,6 +7,8 @@ Features
 
   - clear rhythm
 
+To do
+  rename var parsed_yaml to parsed_song
 =end
 require 'yaml'
 require 'psych'
@@ -85,89 +87,6 @@ def validate_name(name)
   'A name is required' if empty_input?(name)
 end
 
-##### beat helpers #####
-
-def render_beats(yaml_file, wav_file)
-  session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
-end
-
-def get_tempo(parsed_yaml)
-  parsed_yaml["Song"]["Tempo"]
-end
-
-# returns a hash of {"$pattern"=> "x$repeats"}
-def find_pattern(pattern, parsed_yaml)
-    parsed_yaml["Song"]["Flow"].find {|patterns| patterns.has_key?(pattern)}
-end
-
-def new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
-  pattern = parsed_yaml[pattern]
-  rhythm = pattern.find { |rhythms|  rhythms.has_key?(instrument) }
-  if rhythm
-    rhythm[instrument] = new_rhythm
-  else
-    pattern << {instrument => new_rhythm}
-  end
-end
-
-##### beat changers #####
-
-# consider adding return value directly to parsed_yaml in route to avoid
-# opening and writing to file in each method
-
-def change_rhythm(parsed_yaml, yaml_name)
-  instrument = session.delete(:instrument)
-  new_rhythm = session.delete(:rhythm)
-  pattern = session.delete(:pattern)
-
-  new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
-
-  write_to_yaml(parsed_yaml, yaml_name)
-end
-
-def change_pattern(parsed_yaml, yaml_name)
-  pattern = session.delete(:pattern)
-  repeats = session.delete(:repeats)
-
-  find_pattern(pattern, parsed_yaml)[pattern] = "x#{repeats}"
-
-  write_to_yaml(parsed_yaml, yaml_name)
-end
-
-
-
-# def change_kit(parsed_yaml, yaml_name)
-#   pattern = session.delete(:pattern)
-#   kit = session[:kit]  # this is the kit name
-#
-    # kit_path = path to kit + kit name + .yaml
-
-
-
-#   parsed_yaml["Song"]["Kit"] = new_kit
-
-#   write_to_yaml(parsed_yaml, yaml_name)
-# end
-
-def add_pattern(parsed_yaml, yaml_name)
-  pattern_title = session.delete(:pattern_title)
-  new_pattern = session.delete(:new_pattern)
-
-  parsed_yaml[pattern_title] = new_pattern
-  parsed_yaml["Song"]["Flow"] << {pattern_title => "x2"}
-
-
-  write_to_yaml(parsed_yaml, yaml_name)
-end
-
-def change_tempo(parsed_yaml, yaml_name)
-  new_tempo = session.delete(:tempo).to_i
-
-  parsed_yaml["Song"]["Tempo"] = new_tempo
-
-  write_to_yaml(parsed_yaml, yaml_name)
-end
-
 ##### file helpers #####
 
 # consider refactoring
@@ -204,6 +123,110 @@ def app_path
   end
 end
 
+##### beat helpers #####
+
+def render_beats(yaml_file, wav_file)
+  session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
+end
+
+def get_tempo(parsed_yaml)
+  parsed_yaml["Song"]["Tempo"]
+end
+
+# returns a hash of {"$pattern"=> "x$repeats"}
+def find_pattern(pattern, parsed_yaml)
+    parsed_yaml["Song"]["Flow"].find {|patterns| patterns.has_key?(pattern)}
+end
+
+def new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
+  pattern = parsed_yaml[pattern]
+  rhythm = pattern.find { |rhythms|  rhythms.has_key?(instrument) }
+  if rhythm
+    rhythm[instrument] = new_rhythm
+  else
+    pattern << {instrument => new_rhythm}
+  end
+end
+
+def get_kit_instruments(parsed_kit)
+  parsed_kit.map do |hsh|
+    hsh.keys.first
+  end
+end
+
+def swap_instruments(old_kit_instruments, new_kit_instruments, patterns)
+  patterns.each do |pattern|
+    pattern[1].each_with_index do |instrument, index|
+      old_instrument = old_kit_instruments[index]
+      new_instrument = new_kit_instruments[index]
+      instrument[new_instrument] = instrument.delete(old_instrument)
+    end
+  end
+end
+
+##### beat changers #####
+
+# consider adding return value directly to parsed_yaml in route to avoid
+# opening and writing to file in each method
+
+def change_rhythm(parsed_yaml, yaml_name)
+  instrument = session.delete(:instrument)
+  new_rhythm = session.delete(:rhythm)
+  pattern = session.delete(:pattern)
+
+  new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
+
+  write_to_yaml(parsed_yaml, yaml_name)
+end
+
+def change_pattern(parsed_yaml, yaml_name)
+  pattern = session.delete(:pattern)
+  repeats = session.delete(:repeats)
+
+  find_pattern(pattern, parsed_yaml)[pattern] = "x#{repeats}"
+
+  write_to_yaml(parsed_yaml, yaml_name)
+end
+
+def change_kit(parsed_yaml, yaml_name)
+  old_kit_name = session.delete(:old_kit)
+  old_kit_path = File.join(@kits_path, (old_kit_name + ".yaml"))
+
+  new_kit_name = session[:kit]
+  new_kit_path = File.join(@kits_path, (new_kit_name + ".yaml"))
+
+  parsed_old_kit = YAML.load(File.open(old_kit_path))
+  parsed_new_kit = YAML.load(File.open(new_kit_path))
+
+  old_kit_instruments = get_kit_instruments(parsed_old_kit)
+  new_kit_instruments = get_kit_instruments(parsed_new_kit)
+  patterns = parsed_yaml.reject { |k, v| k == "Song"}
+
+  parsed_yaml["Song"]["Kit"] = parsed_new_kit
+  swap_instruments(old_kit_instruments, new_kit_instruments, patterns)
+
+  write_to_yaml(parsed_yaml, yaml_name)
+end
+
+def add_pattern(parsed_yaml, yaml_name)
+  pattern_title = session.delete(:pattern_title)
+  new_pattern = session.delete(:new_pattern)
+
+  parsed_yaml[pattern_title] = new_pattern
+  parsed_yaml["Song"]["Flow"] << {pattern_title => "x2"}
+
+
+  write_to_yaml(parsed_yaml, yaml_name)
+end
+
+def change_tempo(parsed_yaml, yaml_name)
+  new_tempo = session.delete(:tempo).to_i
+
+  parsed_yaml["Song"]["Tempo"] = new_tempo
+
+  write_to_yaml(parsed_yaml, yaml_name)
+end
+
 ##### routes #####
 
 get '/' do
@@ -215,7 +238,7 @@ get '/' do
   add_pattern(parsed_yaml, yaml_name) if session[:new_pattern]
   change_rhythm(parsed_yaml, yaml_name) if session[:rhythm]
   change_pattern(parsed_yaml, yaml_name) if session[:repeats]
-
+  change_kit(parsed_yaml, yaml_name) if session[:old_kit]
 
   render_beats(yaml_name, @wav_name)
 
@@ -260,7 +283,7 @@ post '/song/new_pattern' do
 
    erb :add
   else
-    session[:new_pattern] = YAML.load(File.open(@blank_pattern_path))
+    session[:new_pattern] = YAML.load(File.open(@blank_pattern_path)) # should point to current kit and blank patterns
     session[:pattern_title] = @pattern_title
     redirect '/'
   end
@@ -274,6 +297,7 @@ post "/song/update/:pattern" do
 end
 
 post "/song/change-kit" do
+  session[:old_kit] = session[:kit]
   session[:kit] = params[:kit]
 
   redirect "/"
