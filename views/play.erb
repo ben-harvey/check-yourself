@@ -3,22 +3,35 @@
     <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
   </audio>
 </div>
-<form method="post" action="/song/update/tempo">
-  <span>Current tempo (BPM)</span>
+<form class="repeats" method="post" action="/song/update/tempo">
+  <span>Current tempo:</span>
   <input type="number" id="tempo" name="tempo" min="30" max="300" value="<%= @tempo %>" />
+  <span>(BPM)</span>
   <br>
   <input type="submit" value="Update tempo">
 </form>
+
 <br>
-<a href="/song/new_pattern">Add a pattern</a>
+<br>
+<span>Current kit: </span>
+<form class="repeats" method="post" action="song/change-kit">
+    <select name="kit">
+      <% each_kit do |kit| %>
+        <option <%= selected_kit(kit) %> value="<%= kit %>"><%= kit %></option>
+      <% end %>
+    </select>
+    <br>
+    <input type="submit" value="Update kit">
+  </form>
+<br>
 <br>
 <% each_pattern do |pattern, instrument_array| %>
-  <h4> <%= pattern %> <%= repeats(pattern) %> </h4>
+  <h3> <%= pattern %> </h3>
+  <span>Current repeats:</span>
   <form class="repeats" method="post" action="song/update/<%= pattern %>">
     <select name="repeats">
-      <option value="none">Number of repeats</option>
       <% (1..8).each do |number| %>
-        <option value="<%= number %>"><%= number %></option>
+        <option <%= selected_repeats(number, pattern) %> value="<%= number %>"><%= number %></option>
       <% end %>
     </select>
     <input type="submit" value="Update pattern">
@@ -37,3 +50,6 @@
 <% end %>
 <br>
 <% end %>
+
+<br>
+<a href="/song/new_pattern">Add a pattern</a>

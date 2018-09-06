@@ -2,8 +2,8 @@
 
 Features
   -have preset kits
-
-  -build custom kit
+    on first load, current kit is default.  store current kit in variable.
+    kits list shouldn't include current kit
 
   - clear rhythm
 
@@ -27,6 +27,8 @@ end
 before do
   @blank_yaml_path = "yaml/blank.yaml"
   @blank_pattern_path = "yaml/blank_pattern.yaml"
+  @kits_path = File.join(app_path, "yaml", "kits")
+  session[:kit] ||= "default"
 end
 
 ##### view helpers #####
@@ -45,7 +47,7 @@ helpers do
   end
 
   def repeats(pattern)
-    find_pattern(pattern, @parsed_yaml)[pattern].chars.join(' ')
+    find_pattern(pattern, @parsed_yaml)[pattern].chars.last
   end
 
   def each_instrument(instrument_array)
@@ -53,6 +55,22 @@ helpers do
       instrument_hash.each do |instrument, rhythm|
         yield(instrument, rhythm)
       end
+    end
+  end
+
+  # returns a string or nil
+  def selected_kit(kit)
+    "selected" if session[:kit] == kit
+  end
+
+  def selected_repeats(number, pattern)
+    repeats = find_pattern(pattern, @parsed_yaml)[pattern].chars.last
+    "selected" if number.to_s == repeats
+  end
+
+  def each_kit
+    Dir[@kits_path + "/*"].each do |kit|
+      yield File.basename(kit, ".yaml")
     end
   end
 end
@@ -116,6 +134,21 @@ def change_pattern(parsed_yaml, yaml_name)
   write_to_yaml(parsed_yaml, yaml_name)
 end
 
+
+
+# def change_kit(parsed_yaml, yaml_name)
+#   pattern = session.delete(:pattern)
+#   kit = session[:kit]  # this is the kit name
+#
+    # kit_path = path to kit + kit name + .yaml
+
+
+
+#   parsed_yaml["Song"]["Kit"] = new_kit
+
+#   write_to_yaml(parsed_yaml, yaml_name)
+# end
+
 def add_pattern(parsed_yaml, yaml_name)
   pattern_title = session.delete(:pattern_title)
   new_pattern = session.delete(:new_pattern)
@@ -163,6 +196,14 @@ def write_to_yaml(parsed_yaml, yaml_name)
   File.open(yaml_name, 'w') { |f| f.write(parsed_yaml.to_yaml) }
 end
 
+def app_path
+  if ENV['RACK_ENV'] == 'test'
+    File.expand_path('../test', __FILE__)
+  else
+    File.expand_path('..', __FILE__)
+  end
+end
+
 ##### routes #####
 
 get '/' do
@@ -175,11 +216,13 @@ get '/' do
   change_rhythm(parsed_yaml, yaml_name) if session[:rhythm]
   change_pattern(parsed_yaml, yaml_name) if session[:repeats]
 
+
   render_beats(yaml_name, @wav_name)
 
   new_yaml_name = replace_yaml_file(yaml_name)
   @parsed_yaml = YAML.load(File.open(new_yaml_name))  # for helpers
   @tempo = get_tempo(@parsed_yaml)
+  @kit = session[:kit]
 
   erb :play
 end
@@ -226,6 +269,12 @@ end
 post "/song/update/:pattern" do
   session[:pattern] = params[:pattern]
   session[:repeats] = params[:repeats]
+
+  redirect "/"
+end
+
+post "/song/change-kit" do
+  session[:kit] = params[:kit]
 
   redirect "/"
 end
