@@ -1,9 +1,13 @@
 =begin
 
 Features
-  generate blank patterns with current kit
+  - update all rhythms
+    currently each instrument has its own form with 16 checkboxes
+    instead, one giant form with 80 checkboxes
+      join all 5 rhythm strings into one long string, then split for display.
 
-  - clear rhythm
+  - clear each rhythm
+  - clear all rhythms
 
 To do
   rename var parsed_yaml to parsed_song
@@ -51,14 +55,6 @@ helpers do
     find_pattern(pattern, @parsed_yaml)[pattern].chars.last
   end
 
-  def each_instrument(instrument_array)
-    instrument_array.each do |instrument_hash|
-      instrument_hash.each do |instrument, rhythm|
-        yield(instrument, rhythm)
-      end
-    end
-  end
-
   # returns a string or nil
   def selected_kit(kit)
     "selected" if session[:kit] == kit
@@ -73,6 +69,15 @@ helpers do
     Dir[@kits_path + "/*"].each do |kit|
       yield File.basename(kit, ".yaml")
     end
+  end
+
+  def joined_rhythms(pattern)
+    @parsed_yaml[pattern].map { |hsh| hsh.values.first }.join
+  end
+
+  def instrument_name(instrument_array, index)
+    index = (index / 16)
+    instrument_array[index].keys.first
   end
 end
 
@@ -137,16 +142,6 @@ def find_pattern(pattern, parsed_yaml)
     parsed_yaml["Song"]["Flow"].find {|patterns| patterns.has_key?(pattern)}
 end
 
-def new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
-  pattern = parsed_yaml[pattern]
-  rhythm = pattern.find { |rhythms|  rhythms.has_key?(instrument) }
-  if rhythm
-    rhythm[instrument] = new_rhythm
-  else
-    pattern << {instrument => new_rhythm}
-  end
-end
-
 def get_kit_instruments(parsed_kit)
   parsed_kit.map do |hsh|
     hsh.keys.first
@@ -163,15 +158,27 @@ def swap_instruments(old_kit_instruments, new_kit_instruments, patterns)
   end
 end
 
-def generate_new_pattern
+def current_kit_instruments
   current_kit_name = session[:kit]
   current_kit_path = File.join(@kits_path, (current_kit_name + ".yaml"))
 
   parsed_current_kit = YAML.load(File.open(current_kit_path))
-  current_kit_names = get_kit_instruments(parsed_current_kit)
+  get_kit_instruments(parsed_current_kit)
+end
 
-  current_kit_names.map do |name|
+def generate_new_pattern
+  current_kit_instruments.map do |name|
     {name => "................"}
+  end
+end
+
+def new_instrument_rhythm(new_rhythm, instrument, pattern, parsed_yaml)
+  pattern = parsed_yaml[pattern]
+  rhythm = pattern.find { |rhythms|  rhythms.has_key?(instrument) }
+  if rhythm
+    rhythm[instrument] = new_rhythm
+  else
+    pattern << {instrument => new_rhythm}
   end
 end
 
@@ -181,12 +188,14 @@ end
 # opening and writing to file in each method
 
 def change_rhythm(parsed_yaml, yaml_name)
-  instrument = session.delete(:instrument)
   new_rhythm = session.delete(:rhythm)
   pattern = session.delete(:pattern)
 
-  new_instrument_rhythm(instrument, pattern, parsed_yaml, new_rhythm)
-
+  rhythms = new_rhythm.each_slice(16).map(&:join)
+  rhythms_and_instruments = rhythms.zip(current_kit_instruments)
+  rhythms_and_instruments.each do |rhythm, instrument|
+    new_instrument_rhythm(rhythm, instrument, pattern, parsed_yaml)
+  end
   write_to_yaml(parsed_yaml, yaml_name)
 end
 
@@ -258,6 +267,7 @@ get '/' do
   @tempo = get_tempo(@parsed_yaml)
   @kit = session[:kit]
 
+
   erb :play
 end
 
@@ -271,18 +281,29 @@ post '/song/update/tempo' do
   redirect '/'
 end
 
-post '/rhythm/:pattern/:instrument' do
-  session[:instrument] = params[:instrument]
+# post '/rhythm/:pattern/:instrument' do
+#   session[:instrument] = params[:instrument]
+#   session[:pattern] = params[:pattern]
+
+#   rhythm = ['.'] * 16
+#   params[:rhythm] ||= []
+#   notes = params[:rhythm].map(&:to_i)
+#   notes.each { |note| rhythm[note] = 'X' }
+#   session[:rhythm] = rhythm.join
+
+
+#   redirect "/"
+# end
+post "/:pattern/update-rhythm" do
   session[:pattern] = params[:pattern]
 
-  rhythm = ['.'] * 16
+  rhythm = ['.'] * 80
   params[:rhythm] ||= []
   notes = params[:rhythm].map(&:to_i)
   notes.each { |note| rhythm[note] = 'X' }
-  session[:rhythm] = rhythm.join
+  session[:rhythm] = rhythm
 
-
-  redirect "/"
+  redirect '/'
 end
 
 post '/song/new_pattern' do

@@ -34,20 +34,21 @@
         <option <%= selected_repeats(number, pattern) %> value="<%= number %>"><%= number %></option>
       <% end %>
     </select>
-    <input type="submit" value="Update pattern">
+    <input type="submit" value="Update repeats">
   </form>
 
 <p></p>
-<% each_instrument(instrument_array) do |instrument, rhythm| %>
-  <form method="post" action="/rhythm/<%= pattern %>/<%= instrument %>">
-    <label><%= instrument %></label>
 
-    <% rhythm.chars.each_with_index do |note, index| %>
-      <input type="checkbox" name="rhythm[]" value="<%= index %>" <%= checked_box(note) %> >
-    <% end %>
-    <input type="submit" value="Update rhythm"/>
+<form method="post" action="/<%= pattern %>/update-rhythm">
+  <% joined_rhythms(pattern).chars.each_with_index do |note, index| %>
+  <% if index % 16 == 0%>
+    <label><%= instrument_name(instrument_array, index) %></label>
+  <% end %>
+    <input type="checkbox" name="rhythm[]" value="<%= index %>" <%= checked_box(note) %> >
+  <% end %>
+
+  <input type="submit" value="Update rhythms"/>
 </form>
-<% end %>
 <br>
 <% end %>
 

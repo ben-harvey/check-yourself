@@ -1,27 +1,83 @@
-# parsed = {
-#     "Song"=>
-#           {
-#             "Tempo"=>105,
-#              "Flow"=>
-#                   [
-#                   {"Verse"=>"x4"}
-#                   ],
-#              "Kit"=>
-#              [
-#               {"bass"=>"sounds/house_2_1.wav"},
-#               {"snare"=>"sounds/roland_tr_909_2.wav"},
-#               {"hihat"=>"sounds/house_2_5.wav"},
-#               {"cowbell"=>"sounds/big_beat_5.wav"},
-#                {"deep"=>"sounds/house_2_2.wav"}
-#               ]
-#           },
-#     "Verse"=>
-#           [
-#             {"bass"=>"X..X...X..X..XX"},
-#             {"snare"=>"....X.......X..."},
-#             {"hihat"=>"..X...X...X...X."}
-#           ],
-#   }
+new_rhythm = ["X",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ "X",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ "X",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ ".",
+ "."]
 
 parsed = {"Song"=>
   {"Tempo"=>100,
@@ -30,46 +86,7 @@ parsed = {"Song"=>
  "Verse"=>
   [{"bass"=>"................"}, {"snare"=>"................"}, {"hihat"=>"................"}, {"cowbell"=>"................"},  {"deep"=>"................"}],
 "Chorus"=>
-  [{"bass"=>"..XX`............."}, {"snare"=>"................"}, {"hihat"=>"................"}, {"cowbell"=>"................"},  {"deep"=>"................"}]}
+  [{"bass"=>"..XX............."}, {"snare"=>"................"}, {"hihat"=>"................"}, {"cowbell"=>"................"},  {"deep"=>"................"}]}
 
 
-parsed_new_kit = [
-  {
-    "bongo1"=> "bongo_1.wav"
-  },
-  {
-    "bongo2"=> "bongo_2.wav"
-  },
-  {
-    "bongo3"=> "bongo_3.wav"
-  },
-  {
-    "bongo4"=> "bongo_4.wav"
-  },
-  {
-    "bongo5"=> "bongo_5.wav"
-  }
-]
-
-parsed_old_kit = [{"bass"=>"house_2_1.wav"}, {"snare"=>"roland_tr_909_2.wav"}, {"hihat"=>"house_2_5.wav"}, {"cowbell"=>"big_beat_5.wav"}, {"deep"=>"house_2_2.wav"}]
-# get an array of key names from Kit
-# for each pattern
-  # map the kit names onto the instrument names
-
-
-def get_kit_names(parsed_kit)
-  parsed_kit.map do |hsh|
-    hsh.keys.first
-  end
-end
-
-old_kit_names = get_kit_names(parsed_old_kit) # ["bass", "snare", "hihat", "cowbell", "deep"]
-new_kit_names = get_kit_names(parsed_new_kit)
-
-
-new_pattern = new_kit_names.map do |name|
-  {name => "................"}
-end
-p new_pattern
-
-
+p new_rhythm.each_slice(16).size
