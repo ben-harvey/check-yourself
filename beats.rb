@@ -29,6 +29,7 @@ end
 before do
   @blank_yaml_path = 'yaml/blank.yaml'
   @kits_path = File.join(app_path, 'yaml', 'kits')
+  @song_parts = %w(Verse Prechorus Chorus Bridge Outro)
   session[:kit] ||= 'default'
 end
 
@@ -39,6 +40,18 @@ helpers do
     patterns = @parsed_yaml.reject { |section, _| section == 'Song' }
     patterns.each do |pattern, instrument_array|
       yield(pattern, instrument_array)
+    end
+  end
+# def find_pattern(pattern, parsed_yaml)
+#   parsed_yaml['Song']['Flow'].find { |patterns| patterns.key?(pattern) }
+# end
+
+  def each_part
+    each_pattern do |pattern, _|
+      @song_parts.reject! { |part| part == pattern }
+    end
+    @song_parts.each do |part|
+      yield part
     end
   end
 
@@ -246,6 +259,8 @@ end
 
 ##### routes #####
 
+# main app engine
+
 get '/' do
   @wav_name = replace_wav_file
   yaml_name = session[:yaml_name] || @blank_yaml_path
@@ -289,7 +304,7 @@ post '/:pattern/update-rhythm' do
   redirect '/'
 end
 
-post '/song/new_pattern' do
+post '/song/new-pattern' do
   @pattern_title = params[:title]
 
   if validate_name(@pattern_title)

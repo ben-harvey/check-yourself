@@ -25,6 +25,23 @@
   </form>
 <br>
 <br>
+<span>Add a blank pattern: </span>
+<form class="repeats" method="post" action="song/new-pattern">
+    <select name="title">
+      <option value="none" selected>Select pattern name</option>
+      <% each_part do |part| %>
+        <option <%= part %> value="<%= part %>"><%= part %></option>
+      <% end %>
+    </select>
+    <br>
+    <input type="submit" value="Add pattern">
+  </form>
+<br>
+<br>
+<form class="repeats" method="post" action="reset">
+  <input type="submit" value="Start over">
+</form>
+
 <% each_pattern do |pattern, instrument_array| %>
   <h3> <%= pattern %> </h3>
   <span>Current repeats:</span>
@@ -51,6 +68,3 @@
 </form>
 <br>
 <% end %>
-
-<br>
-<a href="/song/new_pattern">Add a pattern</a>
