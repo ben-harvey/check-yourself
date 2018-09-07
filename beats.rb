@@ -1,26 +1,23 @@
 =begin
 
 Features
-  - update all rhythms
-    currently each instrument has its own form with 16 checkboxes
-    instead, one giant form with 80 checkboxes
-      join all 5 rhythm strings into one long string, then split for display.
 
-  - clear each rhythm
   - clear all rhythms
+      should be similar to adding a new pattern
 
 To do
-  rename var parsed_yaml to parsed_song
 
+  change add pattern to button, add dropdown with song part options
+    -verse, chorus, intro, outro, prechorus, bridge
 =end
+
+# rubocop:disable Metrics/BlockLength
 require 'yaml'
-require 'psych'
 require 'sinatra'
 require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'pry'
 require 'fileutils'
-require 'tempfile'
 require 'securerandom'
 
 configure do
@@ -30,17 +27,16 @@ configure do
 end
 
 before do
-  @blank_yaml_path = "yaml/blank.yaml"
-  @blank_pattern_path = "yaml/blank_pattern.yaml"
-  @kits_path = File.join(app_path, "yaml", "kits")
-  session[:kit] ||= "default"
+  @blank_yaml_path = 'yaml/blank.yaml'
+  @kits_path = File.join(app_path, 'yaml', 'kits')
+  session[:kit] ||= 'default'
 end
 
 ##### view helpers #####
 
 helpers do
   def each_pattern
-    patterns = @parsed_yaml.reject { |k, v| k == "Song"}
+    patterns = @parsed_yaml.reject { |section, _| section == 'Song' }
     patterns.each do |pattern, instrument_array|
       yield(pattern, instrument_array)
     end
@@ -48,26 +44,26 @@ helpers do
 
   # returns a string or nil
   def checked_box(note)
-    "checked" if note == "X"
+    'checked' if note == 'X'
+  end
+
+  # returns a string or nil
+  def selected_kit(kit)
+    'selected' if session[:kit] == kit
   end
 
   def repeats(pattern)
     find_pattern(pattern, @parsed_yaml)[pattern].chars.last
   end
 
-  # returns a string or nil
-  def selected_kit(kit)
-    "selected" if session[:kit] == kit
-  end
-
   def selected_repeats(number, pattern)
     repeats = find_pattern(pattern, @parsed_yaml)[pattern].chars.last
-    "selected" if number.to_s == repeats
+    'selected' if number.to_s == repeats
   end
 
   def each_kit
-    Dir[@kits_path + "/*"].each do |kit|
-      yield File.basename(kit, ".yaml")
+    Dir[@kits_path + '/*'].each do |kit|
+      yield File.basename(kit, '.yaml')
     end
   end
 
@@ -96,7 +92,7 @@ end
 # consider refactoring
 def replace_wav_file
   if session[:last_wav_name]
-    path = File.join("public", session[:last_wav_name])
+    path = File.join('public', session[:last_wav_name])
     FileUtils.rm(path)
   end
   session[:last_wav_name] = "#{random_filename}.wav"
@@ -134,18 +130,12 @@ def render_beats(yaml_file, wav_file)
 end
 
 def get_tempo(parsed_yaml)
-  parsed_yaml["Song"]["Tempo"]
+  parsed_yaml['Song']['Tempo']
 end
 
-# returns a hash of {"$pattern"=> "x$repeats"}
+# returns a hash of {'$pattern'=> 'x$repeats'}
 def find_pattern(pattern, parsed_yaml)
-    parsed_yaml["Song"]["Flow"].find {|patterns| patterns.has_key?(pattern)}
-end
-
-def get_kit_instruments(parsed_kit)
-  parsed_kit.map do |hsh|
-    hsh.keys.first
-  end
+  parsed_yaml['Song']['Flow'].find { |patterns| patterns.key?(pattern) }
 end
 
 def swap_instruments(old_kit_instruments, new_kit_instruments, patterns)
@@ -158,45 +148,57 @@ def swap_instruments(old_kit_instruments, new_kit_instruments, patterns)
   end
 end
 
-def current_kit_instruments
-  current_kit_name = session[:kit]
-  current_kit_path = File.join(@kits_path, (current_kit_name + ".yaml"))
-
-  parsed_current_kit = YAML.load(File.open(current_kit_path))
-  get_kit_instruments(parsed_current_kit)
-end
-
 def generate_new_pattern
-  current_kit_instruments.map do |name|
-    {name => "................"}
+  parsed_kit = parsed_kit(session[:kit])
+  instruments(parsed_kit).map do |name|
+    { name => '................' }
   end
 end
 
-def new_instrument_rhythm(new_rhythm, instrument, pattern, parsed_yaml)
-  pattern = parsed_yaml[pattern]
-  rhythm = pattern.find { |rhythms|  rhythms.has_key?(instrument) }
-  if rhythm
-    rhythm[instrument] = new_rhythm
-  else
-    pattern << {instrument => new_rhythm}
+def parsed_kit(kit)
+  kit_path = File.join(@kits_path, (kit + '.yaml'))
+  YAML.load(File.open(kit_path))
+end
+
+def instruments(parsed_kit)
+  parsed_kit.map do |hsh|
+    hsh.keys.first
   end
 end
 
+def each_rhythm_and_instrument(joined_rhythm, parsed_kit)
+  rhythms = joined_rhythm.each_slice(16).map(&:join)
+  instruments = instruments(parsed_kit)
+  rhythms_and_instruments = rhythms.zip(instruments)
+  rhythms_and_instruments.each do |rhythm, instrument|
+    yield(rhythm, instrument)
+  end
+end
 ##### beat changers #####
 
 # consider adding return value directly to parsed_yaml in route to avoid
 # opening and writing to file in each method
 
 def change_rhythm(parsed_yaml, yaml_name)
-  new_rhythm = session.delete(:rhythm)
+  joined_rhythm = session.delete(:rhythm)
   pattern = session.delete(:pattern)
+  current_kit = session[:kit]
+  parsed_kit = parsed_kit(current_kit)
 
-  rhythms = new_rhythm.each_slice(16).map(&:join)
-  rhythms_and_instruments = rhythms.zip(current_kit_instruments)
-  rhythms_and_instruments.each do |rhythm, instrument|
+  each_rhythm_and_instrument(joined_rhythm, parsed_kit) do |rhythm, instrument|
     new_instrument_rhythm(rhythm, instrument, pattern, parsed_yaml)
   end
   write_to_yaml(parsed_yaml, yaml_name)
+end
+
+def new_instrument_rhythm(new_rhythm, instrument, pattern, parsed_yaml)
+  pattern = parsed_yaml[pattern]
+  rhythm = pattern.find { |rhythms| rhythms.key?(instrument) }
+  if rhythm
+    rhythm[instrument] = new_rhythm
+  else
+    pattern << { instrument => new_rhythm }
+  end
 end
 
 def change_pattern(parsed_yaml, yaml_name)
@@ -208,33 +210,28 @@ def change_pattern(parsed_yaml, yaml_name)
   write_to_yaml(parsed_yaml, yaml_name)
 end
 
+# rubocop:disable Metrics/AbcSize
 def change_kit(parsed_yaml, yaml_name)
-  old_kit_name = session.delete(:old_kit)
-  old_kit_path = File.join(@kits_path, (old_kit_name + ".yaml"))
+  old_kit = session.delete(:old_kit)
+  old_kit_instruments = instruments(parsed_kit(old_kit))
 
-  new_kit_name = session[:kit]
-  new_kit_path = File.join(@kits_path, (new_kit_name + ".yaml"))
+  new_kit = session[:kit]
+  new_kit_instruments = instruments(parsed_kit(new_kit))
 
-  parsed_old_kit = YAML.load(File.open(old_kit_path))
-  parsed_new_kit = YAML.load(File.open(new_kit_path))
-
-  old_kit_instruments = get_kit_instruments(parsed_old_kit)
-  new_kit_instruments = get_kit_instruments(parsed_new_kit)
-  patterns = parsed_yaml.reject { |k, v| k == "Song"}
-
-  parsed_yaml["Song"]["Kit"] = parsed_new_kit
+  patterns = parsed_yaml.reject { |section, _| section == 'Song' }
+  parsed_yaml['Song']['Kit'] = parsed_kit(new_kit)
   swap_instruments(old_kit_instruments, new_kit_instruments, patterns)
 
   write_to_yaml(parsed_yaml, yaml_name)
 end
+# rubocop:enable Metrics/AbcSize
 
 def add_pattern(parsed_yaml, yaml_name)
   pattern_title = session.delete(:pattern_title)
   new_pattern = generate_new_pattern
 
   parsed_yaml[pattern_title] = new_pattern
-  parsed_yaml["Song"]["Flow"] << {pattern_title => "x2"}
-
+  parsed_yaml['Song']['Flow'] << { pattern_title => 'x2' }
 
   write_to_yaml(parsed_yaml, yaml_name)
 end
@@ -242,7 +239,7 @@ end
 def change_tempo(parsed_yaml, yaml_name)
   new_tempo = session.delete(:tempo).to_i
 
-  parsed_yaml["Song"]["Tempo"] = new_tempo
+  parsed_yaml['Song']['Tempo'] = new_tempo
 
   write_to_yaml(parsed_yaml, yaml_name)
 end
@@ -263,10 +260,9 @@ get '/' do
   render_beats(yaml_name, @wav_name)
 
   new_yaml_name = replace_yaml_file(yaml_name)
-  @parsed_yaml = YAML.load(File.open(new_yaml_name))  # for helpers
+  @parsed_yaml = YAML.load(File.open(new_yaml_name))
   @tempo = get_tempo(@parsed_yaml)
   @kit = session[:kit]
-
 
   erb :play
 end
@@ -281,20 +277,7 @@ post '/song/update/tempo' do
   redirect '/'
 end
 
-# post '/rhythm/:pattern/:instrument' do
-#   session[:instrument] = params[:instrument]
-#   session[:pattern] = params[:pattern]
-
-#   rhythm = ['.'] * 16
-#   params[:rhythm] ||= []
-#   notes = params[:rhythm].map(&:to_i)
-#   notes.each { |note| rhythm[note] = 'X' }
-#   session[:rhythm] = rhythm.join
-
-
-#   redirect "/"
-# end
-post "/:pattern/update-rhythm" do
+post '/:pattern/update-rhythm' do
   session[:pattern] = params[:pattern]
 
   rhythm = ['.'] * 80
@@ -313,23 +296,23 @@ post '/song/new_pattern' do
     session[:message] = validate_name(@pattern_title)
     status 422
 
-   erb :add
+    erb :add
   else
     session[:pattern_title] = @pattern_title
     redirect '/'
   end
 end
 
-post "/song/update/:pattern" do
+post '/song/update/:pattern' do
   session[:pattern] = params[:pattern]
   session[:repeats] = params[:repeats]
 
-  redirect "/"
+  redirect '/'
 end
 
-post "/song/change-kit" do
+post '/song/change-kit' do
   session[:old_kit] = session[:kit]
   session[:kit] = params[:kit]
 
-  redirect "/"
+  redirect '/'
 end
