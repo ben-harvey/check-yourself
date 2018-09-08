@@ -75,11 +75,14 @@ end
 
 ##### file helpers #####
 
-# replaces file and returns a string
+# replaces file and returns a string.
 def replace_wav_file
   if session[:last_wav_name]
     path = File.join('public', session[:last_wav_name])
-    FileUtils.rm(path)
+    begin
+      FileUtils.rm(path)
+    rescue
+    end
   end
   session[:last_wav_name] = "#{random_filename}.wav"
 end
