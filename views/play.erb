@@ -1,23 +1,21 @@
-<div class='header'>
-  <audio  autoplay controls >
-    <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
-  </audio>
-</div>
-<form class="repeats" method="post" action="/song/update/tempo">
+<audio autoplay controls>
+  <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
+</audio>
+<br>
+<form class="form" method="post" action="/song/update-tempo">
   <span>Current tempo:</span>
   <input type="number" id="tempo" name="tempo" min="30" max="300" value="<%= @tempo %>" />
   <span>(BPM)</span>
   <br>
   <input type="submit" value="Update tempo">
 </form>
-
 <br>
 <br>
 <span>Current kit: </span>
-<form class="repeats" method="post" action="song/change-kit">
-    <select name="kit">
-      <% each_kit do |kit| %>
-        <option <%= selected_kit(kit) %> value="<%= kit %>"><%= kit %></option>
+<form class="form" method="post" action="song/change-kit">
+  <select name="kit">
+    <% each_kit do |kit| %>
+      <option <%= selected_kit(kit) %> value="<%= kit %>"><%= kit %></option>
       <% end %>
     </select>
     <br>
@@ -26,7 +24,7 @@
 <br>
 <br>
 <span>Add a blank pattern: </span>
-<form class="repeats" method="post" action="song/new-pattern">
+<form class="form" method="post" action="song/new-pattern">
     <select name="title">
       <option value="none" selected>Select pattern name</option>
       <% each_part do |part| %>
@@ -38,14 +36,13 @@
   </form>
 <br>
 <br>
-<form class="repeats" method="post" action="reset">
-  <input type="submit" value="Start over">
+<form class="form" method="post" action="/reset">
+  <input type="submit" value="Clear all and start over">
 </form>
-
 <% each_pattern do |pattern, instrument_array| %>
   <h3> <%= pattern %> </h3>
   <span>Current repeats:</span>
-  <form class="repeats" method="post" action="song/update/<%= pattern %>">
+  <form class="form" method="post" action="song/update/<%= pattern %>">
     <select name="repeats">
       <% (1..8).each do |number| %>
         <option <%= selected_repeats(number, pattern) %> value="<%= number %>"><%= number %></option>
@@ -53,9 +50,8 @@
     </select>
     <input type="submit" value="Update repeats">
   </form>
-
-<p></p>
-
+<br>
+<br>
 <form method="post" action="/<%= pattern %>/update-rhythm">
   <% joined_rhythms(pattern).chars.each_with_index do |note, index| %>
   <% if index % 16 == 0%>
@@ -65,6 +61,6 @@
   <% end %>
 
   <input type="submit" value="Update rhythms"/>
-</form>
-<br>
-<% end %>
+    </form>
+    <br>
+  <% end %>

@@ -1,29 +1,15 @@
-=begin
-
-Features
-
-  - clear all rhythms
-      should be similar to adding a new pattern
-
-To do
-
-  change add pattern to button, add dropdown with song part options
-    -verse, chorus, intro, outro, prechorus, bridge
-=end
-
 # rubocop:disable Metrics/BlockLength
 require 'yaml'
 require 'sinatra'
 require 'sinatra/reloader' if development?
 require 'tilt/erubis'
-require 'pry'
+require 'pry' if development?
 require 'fileutils'
 require 'securerandom'
 
 configure do
   enable :sessions
   set :session_secret, 'secret'
-  set :erb, :escape_html => true
 end
 
 before do
@@ -42,9 +28,6 @@ helpers do
       yield(pattern, instrument_array)
     end
   end
-# def find_pattern(pattern, parsed_yaml)
-#   parsed_yaml['Song']['Flow'].find { |patterns| patterns.key?(pattern) }
-# end
 
   def each_part
     each_pattern do |pattern, _|
@@ -90,19 +73,9 @@ helpers do
   end
 end
 
-##### validation helpers #####
-
-def empty_input?(input)
-  input.strip.empty?
-end
-
-def validate_name(name)
-  'A name is required' if empty_input?(name)
-end
-
 ##### file helpers #####
 
-# consider refactoring
+# replaces file and returns a string
 def replace_wav_file
   if session[:last_wav_name]
     path = File.join('public', session[:last_wav_name])
@@ -111,7 +84,7 @@ def replace_wav_file
   session[:last_wav_name] = "#{random_filename}.wav"
 end
 
-# consider refactoring
+# replaces file and returns a string
 def replace_yaml_file(old_yaml_name)
   new_yaml_name = "yaml/#{random_filename}.yaml"
   FileUtils.cp(old_yaml_name, new_yaml_name)
@@ -133,6 +106,19 @@ def app_path
     File.expand_path('../test', __FILE__)
   else
     File.expand_path('..', __FILE__)
+  end
+end
+
+# returns yaml name and resets session
+def set_yaml_name
+  if session[:reset]
+    session.delete(:reset)
+    session[:kit] = 'default'
+    @blank_yaml_path
+  elsif session[:yaml_name]
+    session[:yaml_name]
+  else
+    @blank_yaml_path
   end
 end
 
@@ -187,10 +173,8 @@ def each_rhythm_and_instrument(joined_rhythm, parsed_kit)
     yield(rhythm, instrument)
   end
 end
-##### beat changers #####
 
-# consider adding return value directly to parsed_yaml in route to avoid
-# opening and writing to file in each method
+##### beat changers #####
 
 def change_rhythm(parsed_yaml, yaml_name)
   joined_rhythm = session.delete(:rhythm)
@@ -263,7 +247,8 @@ end
 
 get '/' do
   @wav_name = replace_wav_file
-  yaml_name = session[:yaml_name] || @blank_yaml_path
+  yaml_name = set_yaml_name
+
   parsed_yaml = YAML.load(File.open(yaml_name))
 
   change_tempo(parsed_yaml, yaml_name) if session[:tempo]
@@ -282,11 +267,7 @@ get '/' do
   erb :play
 end
 
-get '/song/new_pattern' do
-  erb :add
-end
-
-post '/song/update/tempo' do
+post '/song/update-tempo' do
   session[:tempo] = params[:tempo]
 
   redirect '/'
@@ -328,6 +309,12 @@ end
 post '/song/change-kit' do
   session[:old_kit] = session[:kit]
   session[:kit] = params[:kit]
+
+  redirect '/'
+end
+
+post '/reset' do
+  session[:reset] = true
 
   redirect '/'
 end
