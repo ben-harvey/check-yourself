@@ -286,17 +286,8 @@ post '/:pattern/update-rhythm' do
 end
 
 post '/song/new-pattern' do
-  @pattern_title = params[:title]
-
-  if validate_name(@pattern_title)
-    session[:message] = validate_name(@pattern_title)
-    status 422
-
-    erb :add
-  else
-    session[:pattern_title] = @pattern_title
-    redirect '/'
-  end
+  session[:pattern_title] = params[:title]
+  redirect '/'
 end
 
 post '/song/update/:pattern' do
