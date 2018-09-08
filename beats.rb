@@ -9,7 +9,7 @@ require 'securerandom'
 
 configure do
   enable :sessions
-  set :session_secret, 'supersecret'
+  set :session_secret, 'superdupersecret'
 end
 
 before do
