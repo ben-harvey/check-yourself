@@ -1,24 +1,6 @@
-<% if checked_box? %>
 <audio autoplay controls>
   <source id="wav" src="/<%= @wav_name %>" type="audio/wav">
 </audio>
-<% else %>
-<p>All of the rhythms for your track are currently blank! Here's how to add some:<p>
-  <ul>
-    <li>Each instrument has its own rhythm, represented by a horizontal row of checkboxes.</li>
-<li>Each checkbox in the row corresponds to a 16th note in that instrument's rhythm.</li>
-<li>Click the checkboxes for one or more instruments to build some rhythms.</li>
-<li>Then, click the 'Update rhythms' button to the right of the checkboxes to hear your track!</li>
-</ul>
-<p>You can also:</p>
-<ul>
-  <li>add variety to your track by adding a new section (it appears at the bottom of the screen)</li>
-  <li>change the tempo or the drum kit for your track</li>
-  <li>start over and view these instructions again </li>
-</ul>
-<p>Have fun!</p>
-<% end %>
-
 <br>
 <form class="form" method="post" action="/song/update-tempo">
   <span>Current tempo:</span>
@@ -41,16 +23,16 @@
   </form>
 <br>
 <br>
-<span>Add a new section to the track: </span>
+<span>Add a blank pattern: </span>
 <form class="form" method="post" action="song/new-pattern">
     <select name="title">
-      <option value="none" selected>Select section name</option>
+      <option value="none" selected>Select pattern name</option>
       <% each_part do |part| %>
         <option <%= part %> value="<%= part %>"><%= part %></option>
       <% end %>
     </select>
     <br>
-    <input type="submit" value="Add section">
+    <input type="submit" value="Add pattern">
   </form>
 <br>
 <br>
@@ -58,7 +40,7 @@
   <input type="submit" value="Clear all and start over">
 </form>
 <% each_pattern do |pattern, instrument_array| %>
-  <h3> section: <%= pattern %> </h3>
+  <h3> <%= pattern %> </h3>
   <span>Current repeats:</span>
   <form class="form" method="post" action="song/update/<%= pattern %>">
     <select name="repeats">
@@ -76,12 +58,9 @@
     <label><%= instrument_name(instrument_array, index) %></label>
   <% end %>
     <input type="checkbox" name="rhythm[]" value="<%= index %>" <%= checked_box(note) %> >
-    <% if index == 47 %>
-     <input type="submit" value="Update rhythms"/>
-    <% end %>
   <% end %>
 
-
+  <input type="submit" value="Update rhythms"/>
     </form>
     <br>
   <% end %>

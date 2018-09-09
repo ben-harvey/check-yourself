@@ -29,14 +29,6 @@ helpers do
     end
   end
 
-  def checked_box?
-    checked_box = false
-    each_pattern do |pattern, _|
-      checked_box = true if joined_rhythms(pattern).include?('X')
-    end
-    checked_box
-  end
-
   def each_part
     each_pattern do |pattern, _|
       @song_parts.reject! { |part| part == pattern }
@@ -83,10 +75,23 @@ end
 
 ##### file helpers #####
 
+# replaces file and returns a string.
+def replace_wav_file
+  if session[:last_wav_name]
+    path = File.join('public', session[:last_wav_name])
+    begin
+      FileUtils.rm(path)
+    rescue
+    end
+  end
+  session[:last_wav_name] = "#{random_filename}.wav"
+end
+
 # replaces file and returns a string
 def replace_yaml_file(old_yaml_name)
   new_yaml_name = "yaml/#{random_filename}.yaml"
   FileUtils.cp(old_yaml_name, new_yaml_name)
+  FileUtils.rm(old_yaml_name) unless old_yaml_name == @blank_yaml_path
 
   session[:yaml_name] = new_yaml_name
 end
@@ -123,7 +128,7 @@ end
 ##### beat helpers #####
 
 def render_beats(yaml_file, wav_file)
-  `beats --path sounds #{yaml_file} public/#{wav_file}`
+  session[:message] = `beats --path sounds #{yaml_file} public/#{wav_file}`
 end
 
 def get_tempo(parsed_yaml)
@@ -244,7 +249,7 @@ end
 # main app engine
 
 get '/' do
-  @wav_name = "#{random_filename}.wav"
+  @wav_name = replace_wav_file
   yaml_name = set_yaml_name
 
   parsed_yaml = YAML.load(File.open(yaml_name))
