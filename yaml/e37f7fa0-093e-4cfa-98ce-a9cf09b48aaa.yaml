@@ -1,0 +1,17 @@
+---
+Song:
+  Tempo: 100
+  Flow:
+  - Intro: x4
+  Kit:
+  - wacky 1: hh_user_1.wav
+  - wacky 2: hh_user_3.wav
+  - wacky 3: hh_user_4.wav
+  - wacky 4: hh_user_5.wav
+  - wacky 5: hh_user_6.wav
+Intro:
+- wacky 1: X...........X..X
+- wacky 2: ".XX......XX..XX."
+- wacky 3: "...X....X..X...."
+- wacky 4: "....X..X........"
+- wacky 5: ".....XX........."
