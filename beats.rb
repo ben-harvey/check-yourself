@@ -86,9 +86,20 @@ end
 # replaces file and returns a string
 def replace_yaml_file(old_yaml_name)
   new_yaml_name = "yaml/#{random_filename}.yaml"
-  FileUtils.cp(old_yaml_name, new_yaml_name)
-
+  begin
+    FileUtils.cp(old_yaml_name, new_yaml_name)
+  rescue
+    FileUtils.cp(@blank_yaml_path, new_yaml_name)
+  end
   session[:yaml_name] = new_yaml_name
+end
+
+def load_yaml_file(yaml_name)
+  begin
+    YAML.load(File.open(yaml_name))
+  rescue
+    YAML.load(File.open(@blank_yaml_path))
+  end
 end
 
 def random_filename
@@ -247,7 +258,7 @@ get '/' do
   @wav_name = "#{random_filename}.wav"
   yaml_name = set_yaml_name
 
-  parsed_yaml = YAML.load(File.open(yaml_name))
+  parsed_yaml = load_yaml_file(yaml_name)
 
   change_tempo(parsed_yaml, yaml_name) if session[:tempo]
   add_pattern(parsed_yaml, yaml_name) if session[:pattern_title]
@@ -258,7 +269,7 @@ get '/' do
   render_beats(yaml_name, @wav_name)
 
   new_yaml_name = replace_yaml_file(yaml_name)
-  @parsed_yaml = YAML.load(File.open(new_yaml_name))
+  @parsed_yaml = load_yaml_file(new_yaml_name)
   @tempo = get_tempo(@parsed_yaml)
   @kit = session[:kit]
 
