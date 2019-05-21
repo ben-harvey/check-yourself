@@ -1,6 +1,8 @@
 ## A homely, checkbox-based drum machine 
+
 <img src="images/check-yourself.png/"/>
-#### Try the [live app](https://check-yourself.herokuapp.com/)
+
+### Try the [live app](https://check-yourself.herokuapp.com/)
 
 Check yourself is a web-based drum-machine interface, built on top of the [Beats](https://github.com/jstrait/beats) gem.
 Written in Ruby using Sinatra.
