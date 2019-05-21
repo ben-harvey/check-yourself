@@ -1,6 +1,6 @@
 ## A homely, checkbox-based drum machine 
 
-<img src="images/check-yourself.png/" width="48"/>
+<img src="images/check-yourself.png/" width="300"/>
 
 ### Try the [live app](https://check-yourself.herokuapp.com/)
 
