@@ -1,4 +1,4 @@
-## A homely, checkbox-based drum machine 
+## A checkbox-based drum machine 
 
 <img src="images/check-yourself.png/" width="400"/>
 
