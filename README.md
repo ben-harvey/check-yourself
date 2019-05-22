@@ -4,7 +4,7 @@
 
 ### Try the [live app](https://check-yourself.herokuapp.com/)
 
-Check yourself is a web-based drum-machine interface, built on top of the [Beats](https://github.com/jstrait/beats) gem.
+**Check Yourself** is a web-based drum-machine interface, built on top of the [Beats](https://github.com/jstrait/beats) gem.
 Written in Ruby using Sinatra. 
 
 Here's how to play:
